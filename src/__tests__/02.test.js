@@ -1,30 +1,49 @@
-import { renderHook } from "@testing-library/react-hooks/pure";
-import { server } from "../data/mocks/server";
-import { usePokemon } from "../exercise/02";
-// import { usePokemon } from "../solution/02";
+import styled from "styled-components";
+import React, { useEffect, useState } from "react";
 
-beforeAll(() => server.listen());
-afterEach(() => server.resetHandlers());
-afterAll(() => server.close());
+export function usePokemon(query) {
+  const [pokemon, setPokemon] = useState(null);
 
-describe("Exercise 02", () => {
-  test("returns an initial state of null", () => {
-    const { result } = renderHook(() => usePokemon("charmander"));
-    expect(result.current).toMatchObject({ data: null });
-  });
+  useEffect(() => {
+    fetch(`https://pokeapi.co/api/v2/pokemon/${query}`)
+      .then(r => r.json())
+      .then(setPokemon);
+  }, [query]);
 
-  test("returns a pokemon based on the search result after fetching data", async () => {
-    const { result, waitForNextUpdate } = renderHook(() =>
-      usePokemon("charmander")
-    );
+  return { data: pokemon };
+}
 
-    await waitForNextUpdate();
+function Pokemon({ query }) {
+  const { data: pokemon } = usePokemon(query);
+  if (!pokemon) return <h3>Loading...</h3>;
 
-    expect(result.current).toMatchObject({
-      data: {
-        id: 4,
-        name: "charmander",
-      },
-    });
-  });
-});
+  return (
+    <div>
+      <h3>{pokemon.name}</h3>
+      <img
+        src={pokemon.sprites.front_default}
+        alt={pokemon.name + " front sprite"}
+      />
+    </div>
+  );
+}
+
+export default function App() {
+  const [query, setQuery] = useState("charmander");
+
+  function handleSubmit(e) {
+    e.preventDefault();
+    setQuery(e.target.search.value);
+  }
+
+  return (
+    <Wrapper>
+      <h1>PokéSearcher</h1>
+      <Pokemon query={query} />
+      <form onSubmit={handleSubmit}>
+        <input type="text" name="search" defaultValue={query} />
+        <button type="submit">Search</button>
+      </form>
+    </Wrapper>
+  );
+}
