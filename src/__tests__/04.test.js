@@ -1,36 +1,63 @@
-import { renderHook, act } from "@testing-library/react-hooks";
-import { useLocalStorage } from "../exercise/04";
-// import { useLocalStorage } from "../solution/04";
+import { useEffect, useState } from "react";
 
-beforeEach(() => {
-  localStorage.clear();
-  jest.clearAllMocks();
-  localStorage.setItem.mockClear();
-});
+export function useLocalStorage(key, initialValue = null) {
+  const [state, setState] = useState(localStorage.getItem(key) || initialValue);
 
-describe("Exercise 04", () => {
-  test("returns an initial state and a setter function", () => {
-    const { result } = renderHook(() => useLocalStorage("test", "value"));
-    expect(result.current).toMatchObject(["value", expect.any(Function)]);
+  useEffect(() => {
+    if (state !== null) {
+      localStorage.setItem(key, state);
+    }
+  }, [key, state]);
+
+  return [state, setState];
+}
+
+export default function App() {
+  return (
+    <div>
+      <h2>useLocalStorage can save string</h2>
+      <Form />
+      <hr />
+      <h2>useLocalStorage can save objects (Bonus)</h2>
+      <FormWithObject />
+    </div>
+  );
+}
+
+function Form() {
+  const [name, setName] = useLocalStorage("_solution_1_username", "");
+  return (
+    <form style={{ display: "flex", flexDirection: "column" }}>
+      <label htmlFor="name">Name:</label>
+      <input type="text" value={name} onChange={e => setName(e.target.value)} />
+      <h4>{name ? `Welcome, ${name}!` : "Enter your name"}</h4>
+    </form>
+  );
+}
+
+function FormWithObject() {
+  const [formData, setFormData] = useState({
+    title: "",
+    content: "",
   });
 
-  test("has an initial value of null of no value is passed in as a second argument", () => {
-    const { result } = renderHook(() => useLocalStorage("test"));
-    expect(result.current).toMatchObject([null, expect.any(Function)]);
-  });
+  function handleChange(e) {
+    setFormData(formData => ({
+      ...formData,
+      [e.target.name]: e.target.value,
+    }));
+  }
 
-  test("saves the value in localStorage when state is updated", () => {
-    const { result } = renderHook(() => useLocalStorage("test", "old value"));
-    const [, setState] = result.current;
-
-    const newValue = "new value";
-
-    act(() => {
-      setState(newValue);
-    });
-
-    expect(localStorage.setItem).toHaveBeenLastCalledWith("test", newValue);
-    expect(localStorage.__STORE__["test"]).toBe(newValue);
-    expect(result.current[0]).toBe(newValue);
-  });
-});
+  return (
+    <form style={{ display: "flex", flexDirection: "column" }}>
+      <label htmlFor="name">Title:</label>
+      <input name="title" value={formData.title} onChange={handleChange} />
+      <label htmlFor="name">Content:</label>
+      <textarea
+        name="content"
+        value={formData.content}
+        onChange={handleChange}
+      />
+    </form>
+  );
+}
